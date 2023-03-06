@@ -34,17 +34,15 @@ function Banner() {
       }}
     >
       <div className="banner__contents">
-        <h1 className="banner__title">Phim Fast and Furios</h1>
+        <h1 className="banner__title">
+          {movie?.name || movie?.title || movie?.original_name}
+        </h1>
         <div className="banner__buttons">
           <button className="banner__button">Xem ngay</button>
           <button className="banner__button">Danh sách của tôi</button>
         </div>
         <h1 className="banner__description">
-          {truncate(
-            `Đây là mô tả mẫu Đây là mô tả mẫu Đây là mô tả mẫu Đây là mô tả mẫu Đây là mô tả mẫu Đây là mô tả mẫu Đây là mô tả mẫu 
-              Đây là mô tả mẫuĐây là mô tả mẫuĐây là mô tả mẫuĐây là mô tả mẫu`,
-            150,
-          )}
+          {truncate(movie?.overview, 150)}
         </h1>
       </div>
 
