@@ -6,12 +6,11 @@ function Footer() {
       <div
         className="Footer"
         style={{
-          borderTop: "1px solid",
-          marginTop: "10px",
+          marginTop: "2px",
           fontSize: "15px",
           color: "black",
           textAlign: "center",
-          padding: "13px 0",
+          padding: "8px 0",
           background: "white",
           fontWeight: "bold",
         }}

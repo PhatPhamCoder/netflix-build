@@ -1,0 +1,16 @@
+.plansScreen__plan {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 5px;
+    opacity: 0.8;
+}
+
+.plansScreen__subcribe {
+    outline: none;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: #fff;
+    background-color: #e10712;
+    cursor: pointer;
+}
