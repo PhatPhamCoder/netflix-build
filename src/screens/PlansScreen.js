@@ -1,43 +1,115 @@
-import { async } from "@firebase/util";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import db from "../firebase";
 import "./PlansScreen.css";
+import db from "../firebase";
+import { useSelector } from "react-redux";
+import { selectUser } from "../features/userSlice";
+import { loadStripe } from "@stripe/stripe-js";
 
 function PlansScreen() {
   const [products, setProducts] = useState([]);
-  // const [prices, setPrices] = useState([]);
+  const user = useSelector(selectUser);
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
-    const getProduct = async () => {
-      const product = query(
-        collection(db, "products"),
-        where("active", "==", true),
-      );
-      const querySnapshot = await getDocs(product);
-
-      querySnapshot.forEach(async (productDoc) => {
-        products[productDoc.id] = productDoc.data();
+    db.collection("customers")
+      .doc(user.uid)
+      .collection("subscriptions")
+      .get()
+      .then((querySnapshot) => {
+        querySnapshot.forEach(async (subscription) => {
+          setSubscription({
+            role: subscription.data().role,
+            current_period_end: subscription.data().current_period_end.seconds,
+            current_period_start:
+              subscription.data().current_period_start.seconds,
+          });
+        });
       });
-      setProducts(products);
-    };
-    getProduct();
-  }, [products]);
+  }, [user.uid]);
+
+  useEffect(() => {
+    db.collection("products")
+      .where("active", "==", true)
+      .get()
+      .then((querySnapshot) => {
+        const products = {};
+        querySnapshot.forEach(async (productDoc) => {
+          products[productDoc.id] = productDoc.data();
+          const priceSnap = await productDoc.ref.collection("prices").get();
+          priceSnap.docs.forEach((price) => {
+            products[productDoc.id].prices = {
+              priceId: price.id,
+              priceData: price.data(),
+            };
+          });
+        });
+        setProducts(products);
+      });
+  }, []);
 
   console.log("Products from db", products);
+  console.log("subscription from db", subscription);
 
-  // const loadCheckout = async (pricesId) => {};
+  const loadCheckout = async (priceId) => {
+    const docRef = await db
+      .collection("customers")
+      .doc(user.uid)
+      .collection("checkout_sessions")
+      .add({
+        price: priceId,
+        success_url: window.location.origin,
+        cancel_url: window.location.origin,
+      });
+    docRef.onSnapshot(async (snap) => {
+      const { error, sessionId } = snap.data();
+
+      if (error) {
+        alert(`An error Occured: ${error.message}`);
+      }
+
+      if (sessionId) {
+        const stripe = await loadStripe(
+          "pk_test_51MiYi6ArmUUbLxM2pXp1ybtQqPnoZHPydNDDqZhkZCjyfQuxb2xG8AluGjvDovPpeazYggPYnu2n2NO7DfK8IfT500OEHZYljr",
+        );
+
+        stripe.redirectToCheckout({ sessionId });
+      }
+    });
+  };
 
   return (
     <div className="plansScreen">
+      {subscription && (
+        <p>
+          Renewal date:
+          {new Date(
+            subscription?.current_period_end * 1000,
+          ).toLocaleDateString()}
+        </p>
+      )}
       {Object.entries(products).map(([productId, productData]) => {
+        const isCurrentPackge = productData.name
+          ?.toLowerCase()
+          .includes(subscription?.role);
         return (
-          <div className="plansScreen__plan">
+          <div
+            key={productId}
+            className={`${
+              isCurrentPackge && "plansScreen__plan__disable"
+            } plansScreen__plan`}
+          >
             <div className="plansScreen__info">
               <h5>{productData.name}</h5>
               <h6>{productData.description}</h6>
             </div>
-            <button className="plansScreen__subcribe">Subcribe</button>
+            <button
+              className="plansScreen__subcribe"
+              onClick={() =>
+                !isCurrentPackge && loadCheckout(productData.prices.priceId)
+              }
+            >
+              {isCurrentPackge ? "Current packge" : "Subcribe"}
+            </button>
           </div>
         );
       })}

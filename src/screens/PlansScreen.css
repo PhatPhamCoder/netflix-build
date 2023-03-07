@@ -14,3 +14,8 @@
     background-color: #e10712;
     cursor: pointer;
 }
+
+.plansScreen__plan__disable > button {
+    background-color: gray;
+    
+}
